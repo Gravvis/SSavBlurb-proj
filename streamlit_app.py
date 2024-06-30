@@ -8,7 +8,7 @@ import http.server
 import socketserver
 import threading
 
-PORT = 8001
+PORT = 8000
 MAX_PORT_ATTEMPTS = 10
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
@@ -81,7 +81,7 @@ def main():
         def autosave_text():
             while True:
                 time.sleep(SAVE_INTERVAL)
-                save_text(shared_text)
+                save_text(shared_text.value)
 
         autosave_thread = threading.Thread(target=autosave_text)
         autosave_thread.daemon = True
@@ -91,6 +91,7 @@ def main():
     for port_attempt in range(PORT, PORT + MAX_PORT_ATTEMPTS * 2):
         try:
             with socketserver.TCPServer(("", port_attempt), http.server.SimpleHTTPRequestHandler) as httpd:
+                httpd.allow_reuse_address = True
                 st.write(f"Serving at port {port_attempt}")
                 httpd.serve_forever()
                 break
