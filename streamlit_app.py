@@ -76,7 +76,7 @@ def main():
 
     with st.container():
         st.markdown("## Shared Text")
-        shared_text = st.text_area("", height=400, key="shared_text", value=load_text(), disabled=False)
+        shared_text_value = st.text_area("", height=400, value=load_text(), disabled=False)
 
         lock = threading.Lock()
         last_saved_text = load_text()
@@ -85,9 +85,9 @@ def main():
             while True:
                 time.sleep(SAVE_INTERVAL)
                 with lock:
-                    if shared_text.value != last_saved_text:
-                        save_text(shared_text.value)
-                        last_saved_text = shared_text.value
+                    if shared_text_value != last_saved_text:
+                        save_text(shared_text_value)
+                        last_saved_text = shared_text_value
 
         autosave_thread = threading.Thread(target=autosave_text)
         autosave_thread.daemon = True
@@ -95,8 +95,8 @@ def main():
 
         if st.button("Update"):
             with lock:
-                save_text(shared_text.value)
-                last_saved_text = shared_text.value
+                save_text(shared_text_value)
+                last_saved_text = shared_text_value
                 st.success("Shared text updated.")
 
     # Start the local HTTP server
