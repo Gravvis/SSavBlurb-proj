@@ -8,8 +8,8 @@ import http.server
 import socketserver
 import threading
 
-PORT = 8000
-MAX_PORT_ATTEMPTS = 7
+PORT = 8001
+MAX_PORT_ATTEMPTS = 99
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
 def get_shared_text_file_name():
