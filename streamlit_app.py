@@ -166,6 +166,8 @@ def main():
                             mime='application/octet-stream',
                         )
                 col2.write(file_name)
+        else:
+            st.write("No files have been uploaded yet.")
 
         uploaded_file = st.file_uploader("Upload a file (max 50 MB)", type=None, accept_multiple_files=False, max_size=MAX_FILE_SIZE)
         if uploaded_file is not None:
