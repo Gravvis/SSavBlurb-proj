@@ -169,8 +169,11 @@ def main():
         else:
             st.write("No files have been uploaded yet.")
 
-        uploaded_file = st.file_uploader("Upload a file (max 50 MB)", type=None, accept_multiple_files=False, max_size=MAX_FILE_SIZE)
-        if uploaded_file is not None:
+        with st.form("file_upload_form"):
+            uploaded_file = st.file_input("Upload a file (max 50 MB)", type=None, accept_multiple_files=False)
+            submit = st.form_submit_button("Upload")
+
+        if submit and uploaded_file is not None:
             file_path = os.path.join(os.getcwd(), 'uploads', uploaded_file.name)
             with open(file_path, 'wb') as f:
                 f.write(uploaded_file.getbuffer())
