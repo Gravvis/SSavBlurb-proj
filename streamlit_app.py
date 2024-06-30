@@ -8,7 +8,7 @@ import http.server
 import socketserver
 import threading
 
-PORT = 8000
+PORT = 8001
 MAX_PORT_ATTEMPTS = 7
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
