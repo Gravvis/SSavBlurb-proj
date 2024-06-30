@@ -78,14 +78,22 @@ def main():
         st.markdown("## Shared Text")
         shared_text = st.text_area("", height=400, key="shared_text", value=load_text(), disabled=False)
 
+        lock = threading.Lock()
+
         def autosave_text():
             while True:
                 time.sleep(SAVE_INTERVAL)
-                save_text(shared_text.value)
+                with lock:
+                    save_text(shared_text.value)
 
         autosave_thread = threading.Thread(target=autosave_text)
         autosave_thread.daemon = True
         autosave_thread.start()
+
+        if st.button("Update"):
+            with lock:
+                save_text(shared_text.value)
+                st.success("Shared text updated.")
 
     # Start the local HTTP server
     for port_attempt in range(PORT, PORT + MAX_PORT_ATTEMPTS * 2):
