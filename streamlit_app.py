@@ -9,7 +9,7 @@ import socketserver
 import fcntl
 import contextlib
 
-PORT = 8001
+PORT = 8000
 MAX_PORT_ATTEMPTS = 10
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
@@ -99,22 +99,23 @@ def main():
 
     with st.container():
         st.markdown("## Shared Text")
-        shared_text_value = st.text_area("", height=400, value=get_shared_text(), disabled=False)
+        shared_text_value = st.text_area("", height=400, value=get_shared_text(), disabled=False, key="shared_text_area")
 
         lock = threading.Lock()
         last_saved_text = get_shared_text()
 
-        def autosave_text():
+        def update_shared_text():
             while True:
                 time.sleep(SAVE_INTERVAL)
                 with file_lock(shared_text_file):
                     if shared_text_value != last_saved_text:
                         save_text(shared_text_value, shared_text_file)
                         last_saved_text = shared_text_value
+                        st.experimental_rerun()
 
-        autosave_thread = threading.Thread(target=autosave_text)
-        autosave_thread.daemon = True
-        autosave_thread.start()
+        update_thread = threading.Thread(target=update_shared_text)
+        update_thread.daemon = True
+        update_thread.start()
 
         if st.button("Update"):
             with file_lock(shared_text_file):
