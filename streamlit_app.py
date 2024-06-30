@@ -8,7 +8,7 @@ import http.server
 import socketserver
 import threading
 
-PORT = 8001
+PORT = 8000
 MAX_PORT_ATTEMPTS = 7
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
@@ -32,6 +32,8 @@ def load_text():
 
 def start_server(port):
     with socketserver.TCPServer(("", port), http.server.SimpleHTTPRequestHandler) as httpd:
+        # Allow reuse of the socket address
+        httpd.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         st.write(f"Serving at port {port}")
         httpd.serve_forever()
 
@@ -97,6 +99,7 @@ def main():
         start_server(PORT)
     except OSError as e:
         if e.errno == 98:  # Address already in use
+            st.error(f"Port {PORT} is already in use. Trying to find an available port...")
             for port_attempt in range(PORT + 1, PORT + MAX_PORT_ATTEMPTS + 1):
                 try:
                     start_server(port_attempt)
