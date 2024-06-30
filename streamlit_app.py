@@ -4,8 +4,10 @@ import socket
 import time
 import json
 import threading
+import http.server
+import socketserver
 
-PORT = 8001
+PORT = 8000
 MAX_PORT_ATTEMPTS = 10
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
