@@ -30,13 +30,6 @@ def load_text():
             return data["text"]
     return ""
 
-def start_server(port):
-    with socketserver.TCPServer(("", port), http.server.SimpleHTTPRequestHandler) as httpd:
-        # Allow reuse of the socket address
-        httpd.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        st.write(f"Serving at port {port}")
-        httpd.serve_forever()
-
 def main():
     st.set_page_config(page_title="SSavBlurb", layout="wide")
 
@@ -95,23 +88,20 @@ def main():
         autosave_thread.start()
 
     # Start the local HTTP server
-    try:
-        start_server(PORT)
-    except OSError as e:
-        if e.errno == 98:  # Address already in use
-            st.error(f"Port {PORT} is already in use. Trying to find an available port...")
-            for port_attempt in range(PORT + 1, PORT + MAX_PORT_ATTEMPTS + 1):
-                try:
-                    start_server(port_attempt)
-                    break
-                except OSError as e:
-                    if e.errno == 98 and port_attempt == PORT + MAX_PORT_ATTEMPTS:
-                        st.error(f"Maximum number of port attempts ({MAX_PORT_ATTEMPTS}) reached. Unable to start the server.")
-                        return
-                    else:
-                        raise e
-        else:
-            raise e
+    for port_attempt in range(PORT, PORT + MAX_PORT_ATTEMPTS):
+        try:
+            with socketserver.TCPServer(("", port_attempt), http.server.SimpleHTTPRequestHandler) as httpd:
+                st.write(f"Serving at port {port_attempt}")
+                httpd.serve_forever()
+                break
+        except OSError as e:
+            if e.errno == 98:  # Address already in use
+                if port_attempt == PORT + MAX_PORT_ATTEMPTS - 1:
+                    st.error(f"Maximum number of port attempts ({MAX_PORT_ATTEMPTS}) reached. Unable to start the server.")
+                    return
+                continue
+            else:
+                raise e
 
 if __name__ == "__main__":
     main()
