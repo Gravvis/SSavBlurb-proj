@@ -2,13 +2,10 @@ import streamlit as st
 import os
 import socket
 import time
-from datetime import datetime, timedelta
 import json
-import http.server
-import socketserver
 import threading
 
-PORT = 8000
+PORT = 8001
 MAX_PORT_ATTEMPTS = 10
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
@@ -21,14 +18,6 @@ def save_text(text):
     shared_text_file = get_shared_text_file_name()
     with open(shared_text_file, "w") as f:
         json.dump({"text": text}, f)
-
-def load_text():
-    shared_text_file = get_shared_text_file_name()
-    if os.path.exists(shared_text_file):
-        with open(shared_text_file, "r") as f:
-            data = json.load(f)
-            return data["text"]
-    return ""
 
 def main():
     st.set_page_config(page_title="SSavBlurb", layout="wide")
@@ -76,10 +65,10 @@ def main():
 
     with st.container():
         st.markdown("## Shared Text")
-        shared_text_value = st.text_area("", height=400, value=load_text(), disabled=False)
+        shared_text_value = st.text_area("", height=400, value="", disabled=False)
 
         lock = threading.Lock()
-        last_saved_text = load_text()
+        last_saved_text = ""
 
         def autosave_text():
             while True:
