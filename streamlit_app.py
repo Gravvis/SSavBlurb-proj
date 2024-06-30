@@ -6,8 +6,10 @@ import json
 import threading
 import http.server
 import socketserver
+import fcntl
+import contextlib
 
-PORT = 8001
+PORT = 8000
 MAX_PORT_ATTEMPTS = 10
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
@@ -15,6 +17,27 @@ def get_shared_text_file_name():
     host_name = socket.gethostname()
     host_ip = socket.gethostbyname(host_name)
     return f"shared_text_{host_ip.replace('.', '_')}.json"
+
+@contextlib.contextmanager
+def file_lock(filename):
+    with open(filename, 'w') as f:
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            yield
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
+
+@st.cache(allow_output_mutation=True)
+def get_shared_text():
+    shared_text_file = get_shared_text_file_name()
+    try:
+        os.makedirs(os.path.dirname(shared_text_file), exist_ok=True)
+    except OSError:
+        pass
+    if not os.path.exists(shared_text_file):
+        open(shared_text_file, 'w').close()
+        os.chmod(shared_text_file, 0o666)
+    return load_text()
 
 def load_text():
     shared_text_file = get_shared_text_file_name()
@@ -26,8 +49,9 @@ def load_text():
 
 def save_text(text):
     shared_text_file = get_shared_text_file_name()
-    with open(shared_text_file, "w") as f:
-        json.dump({"text": text}, f)
+    with file_lock(shared_text_file):
+        with open(shared_text_file, "w") as f:
+            json.dump({"text": text}, f)
 
 def main():
     st.set_page_config(page_title="SSavBlurb", layout="wide")
@@ -75,15 +99,15 @@ def main():
 
     with st.container():
         st.markdown("## Shared Text")
-        shared_text_value = st.text_area("", height=400, value=load_text(), disabled=False)
+        shared_text_value = st.text_area("", height=400, value=get_shared_text(), disabled=False)
 
         lock = threading.Lock()
-        last_saved_text = load_text()
+        last_saved_text = get_shared_text()
 
         def autosave_text():
             while True:
                 time.sleep(SAVE_INTERVAL)
-                with lock:
+                with file_lock(shared_text_file):
                     if shared_text_value != last_saved_text:
                         save_text(shared_text_value)
                         last_saved_text = shared_text_value
@@ -93,11 +117,11 @@ def main():
         autosave_thread.start()
 
         if st.button("Update"):
-            with lock:
+            with file_lock(shared_text_file):
                 save_text(shared_text_value)
                 last_saved_text = shared_text_value
                 st.success("Shared text updated.")
-            shared_text_value = load_text()  # Reload the shared text
+            shared_text_value = get_shared_text()
 
     # Start the local HTTP server
     for port_attempt in range(PORT, PORT + MAX_PORT_ATTEMPTS * 2):
