@@ -7,7 +7,7 @@ import threading
 import http.server
 import socketserver
 
-PORT = 8000
+PORT = 8001
 MAX_PORT_ATTEMPTS = 10
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
@@ -97,6 +97,7 @@ def main():
                 save_text(shared_text_value)
                 last_saved_text = shared_text_value
                 st.success("Shared text updated.")
+            shared_text_value = load_text()  # Reload the shared text
 
     # Start the local HTTP server
     for port_attempt in range(PORT, PORT + MAX_PORT_ATTEMPTS * 2):
