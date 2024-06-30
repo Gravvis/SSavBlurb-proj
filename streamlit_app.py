@@ -9,19 +9,23 @@ import socketserver
 import threading
 
 PORT = 8001
+MAX_PORT_ATTEMPTS = 7
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
+def get_shared_text_file_name():
+    host_name = socket.gethostname()
+    host_ip = socket.gethostbyname(host_name)
+    return f"shared_text_{host_ip.replace('.', '_')}.json"
+
 def save_text(text):
-    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"saved_text_{current_time}.json"
-    with open(filename, "w") as f:
+    shared_text_file = get_shared_text_file_name()
+    with open(shared_text_file, "w") as f:
         json.dump({"text": text}, f)
 
 def load_text():
-    files = [f for f in os.listdir() if f.startswith("saved_text_")]
-    if files:
-        latest_file = max(files, key=lambda x: os.path.getmtime(x))
-        with open(latest_file, "r") as f:
+    shared_text_file = get_shared_text_file_name()
+    if os.path.exists(shared_text_file):
+        with open(shared_text_file, "r") as f:
             data = json.load(f)
             return data["text"]
     return ""
@@ -84,9 +88,20 @@ def main():
         autosave_thread.start()
 
     # Start the local HTTP server
-    with socketserver.TCPServer(("", PORT), http.server.SimpleHTTPRequestHandler) as httpd:
-        st.write(f"Serving at port {PORT}")
-        httpd.serve_forever()
+    for port_attempt in range(PORT, PORT + MAX_PORT_ATTEMPTS):
+        try:
+            with socketserver.TCPServer(("", port_attempt), http.server.SimpleHTTPRequestHandler) as httpd:
+                st.write(f"Serving at port {port_attempt}")
+                httpd.serve_forever()
+                break
+        except OSError as e:
+            if e.errno == 98:  # Address already in use
+                if port_attempt == PORT + MAX_PORT_ATTEMPTS - 1:
+                    st.error(f"Maximum number of port attempts ({MAX_PORT_ATTEMPTS}) reached. Unable to start the server.")
+                    return
+                continue
+            else:
+                raise e
 
 if __name__ == "__main__":
     main()
