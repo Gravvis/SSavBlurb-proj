@@ -9,7 +9,7 @@ import socketserver
 import threading
 
 PORT = 8001
-MAX_PORT_ATTEMPTS = 99
+MAX_PORT_ATTEMPTS = 10
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
 def get_shared_text_file_name():
@@ -88,7 +88,7 @@ def main():
         autosave_thread.start()
 
     # Start the local HTTP server
-    for port_attempt in range(PORT, PORT + MAX_PORT_ATTEMPTS):
+    for port_attempt in range(PORT, PORT + MAX_PORT_ATTEMPTS * 2):
         try:
             with socketserver.TCPServer(("", port_attempt), http.server.SimpleHTTPRequestHandler) as httpd:
                 st.write(f"Serving at port {port_attempt}")
@@ -97,8 +97,8 @@ def main():
         except OSError as e:
             if e.errno == 98:  # Address already in use
                 if port_attempt == PORT + MAX_PORT_ATTEMPTS - 1:
-                    st.error(f"Maximum number of port attempts ({MAX_PORT_ATTEMPTS}) reached. Unable to start the server.")
-                    return
+                    port_attempt = PORT
+                    continue
                 continue
             else:
                 raise e
