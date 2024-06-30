@@ -9,7 +9,7 @@ import socketserver
 import fcntl
 import contextlib
 
-PORT = 8000
+PORT = 8001
 MAX_PORT_ATTEMPTS = 10
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
@@ -37,18 +37,16 @@ def get_shared_text():
     if not os.path.exists(shared_text_file):
         open(shared_text_file, 'w').close()
         os.chmod(shared_text_file, 0o666)
-    return load_text()
+    return load_text(shared_text_file)
 
-def load_text():
-    shared_text_file = get_shared_text_file_name()
+def load_text(shared_text_file):
     if os.path.exists(shared_text_file):
         with open(shared_text_file, "r") as f:
             data = json.load(f)
             return data["text"]
     return ""
 
-def save_text(text):
-    shared_text_file = get_shared_text_file_name()
+def save_text(text, shared_text_file):
     with file_lock(shared_text_file):
         with open(shared_text_file, "w") as f:
             json.dump({"text": text}, f)
@@ -97,6 +95,8 @@ def main():
     host_ip = socket.gethostbyname(host_name)
     st.write(f"Your device's IP address: {host_ip}")
 
+    shared_text_file = get_shared_text_file_name()
+
     with st.container():
         st.markdown("## Shared Text")
         shared_text_value = st.text_area("", height=400, value=get_shared_text(), disabled=False)
@@ -109,7 +109,7 @@ def main():
                 time.sleep(SAVE_INTERVAL)
                 with file_lock(shared_text_file):
                     if shared_text_value != last_saved_text:
-                        save_text(shared_text_value)
+                        save_text(shared_text_value, shared_text_file)
                         last_saved_text = shared_text_value
 
         autosave_thread = threading.Thread(target=autosave_text)
@@ -118,7 +118,7 @@ def main():
 
         if st.button("Update"):
             with file_lock(shared_text_file):
-                save_text(shared_text_value)
+                save_text(shared_text_value, shared_text_file)
                 last_saved_text = shared_text_value
                 st.success("Shared text updated.")
             shared_text_value = get_shared_text()
