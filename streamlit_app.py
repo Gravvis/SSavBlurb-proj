@@ -8,7 +8,7 @@ import http.server
 import socketserver
 import threading
 
-PORT = 8001
+PORT = 8000
 MAX_PORT_ATTEMPTS = 7
 SAVE_INTERVAL = 3  # Save every 3 seconds
 
@@ -29,6 +29,11 @@ def load_text():
             data = json.load(f)
             return data["text"]
     return ""
+
+def start_server(port):
+    with socketserver.TCPServer(("", port), http.server.SimpleHTTPRequestHandler) as httpd:
+        st.write(f"Serving at port {port}")
+        httpd.serve_forever()
 
 def main():
     st.set_page_config(page_title="SSavBlurb", layout="wide")
@@ -88,20 +93,22 @@ def main():
         autosave_thread.start()
 
     # Start the local HTTP server
-    for port_attempt in range(PORT, PORT + MAX_PORT_ATTEMPTS):
-        try:
-            with socketserver.TCPServer(("", port_attempt), http.server.SimpleHTTPRequestHandler) as httpd:
-                st.write(f"Serving at port {port_attempt}")
-                httpd.serve_forever()
-                break
-        except OSError as e:
-            if e.errno == 98:  # Address already in use
-                if port_attempt == PORT + MAX_PORT_ATTEMPTS - 1:
-                    st.error(f"Maximum number of port attempts ({MAX_PORT_ATTEMPTS}) reached. Unable to start the server.")
-                    return
-                continue
-            else:
-                raise e
+    try:
+        start_server(PORT)
+    except OSError as e:
+        if e.errno == 98:  # Address already in use
+            for port_attempt in range(PORT + 1, PORT + MAX_PORT_ATTEMPTS + 1):
+                try:
+                    start_server(port_attempt)
+                    break
+                except OSError as e:
+                    if e.errno == 98 and port_attempt == PORT + MAX_PORT_ATTEMPTS:
+                        st.error(f"Maximum number of port attempts ({MAX_PORT_ATTEMPTS}) reached. Unable to start the server.")
+                        return
+                    else:
+                        raise e
+        else:
+            raise e
 
 if __name__ == "__main__":
     main()
