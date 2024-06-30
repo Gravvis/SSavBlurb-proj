@@ -16,6 +16,14 @@ def get_shared_text_file_name():
     host_ip = socket.gethostbyname(host_name)
     return f"shared_text_{host_ip.replace('.', '_')}.json"
 
+def load_text():
+    shared_text_file = get_shared_text_file_name()
+    if os.path.exists(shared_text_file):
+        with open(shared_text_file, "r") as f:
+            data = json.load(f)
+            return data["text"]
+    return ""
+
 def save_text(text):
     shared_text_file = get_shared_text_file_name()
     with open(shared_text_file, "w") as f:
@@ -67,10 +75,10 @@ def main():
 
     with st.container():
         st.markdown("## Shared Text")
-        shared_text_value = st.text_area("", height=400, value="", disabled=False)
+        shared_text_value = st.text_area("", height=400, value=load_text(), disabled=False)
 
         lock = threading.Lock()
-        last_saved_text = ""
+        last_saved_text = load_text()
 
         def autosave_text():
             while True:
