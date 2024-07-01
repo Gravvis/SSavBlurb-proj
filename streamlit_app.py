@@ -77,7 +77,7 @@ def main():
         return
 
     # Display the shared text in the text area
-    text = st.text_area("Enter your text here", value=shared_text, height=200)
+    text = st.text_area("Enter your text here", value=shared_text, height=200, key="shared_text")
 
     # Save the text to the shared file
     if st.button("Save"):
